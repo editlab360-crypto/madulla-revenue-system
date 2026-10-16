@@ -47,9 +47,15 @@
 
             <!-- Left: Services + Form -->
             <div class="lg:col-span-7 bg-white p-6 rounded-xl shadow-md no-print">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">1. සේවාව / ආදායම් මාර්ගය තෝරන්න</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-3 border-b pb-2">1. සේවාව / ආදායම් මාර්ගය තෝරන්න</h2>
 
-                <div id="services-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-96 overflow-y-auto p-1 mb-6 border rounded-lg bg-gray-50"></div>
+                <!-- Search Box -->
+                <div class="mb-3">
+                    <input type="text" id="service-search" oninput="filterButtons()" placeholder="සේවාව නමින් සොයන්න..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+
+                <!-- Services Grid -->
+                <div id="services-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-1 mb-6 border rounded-lg bg-gray-50"></div>
 
                 <form id="income-form" onsubmit="handleFormSubmit(event)" class="space-y-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <div>
@@ -91,9 +97,11 @@
 
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">3. සේවාව අනුව අද එකතුව</h2>
-                    <table class="w-full text-left border-collapse text-sm">
-                        <tbody id="summary-list"></tbody>
-                    </table>
+                    <div class="overflow-y-auto max-h-[300px]">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <tbody id="summary-list"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -128,7 +136,6 @@
             }
         }
 
-        // දේශීය දිනය (YYYY-MM-DD)
         function todayKey() {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -150,10 +157,18 @@
         document.getElementById('current-date').innerText =
             new Date().toLocaleDateString('si-LK', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        function renderButtons() {
+        function renderButtons(filterText = '') {
             const grid = document.getElementById('services-grid');
             grid.innerHTML = '';
-            servicesList.forEach(service => {
+
+            const filtered = servicesList.filter(s => s.toLowerCase().includes(filterText.toLowerCase()));
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-3 text-center p-4 text-gray-400 text-xs">සේවාවක් හමු නොවීය.</div>`;
+                return;
+            }
+
+            filtered.forEach(service => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.textContent = service;
@@ -166,9 +181,15 @@
             });
         }
 
+        function filterButtons() {
+            renderButtons(document.getElementById('service-search').value);
+        }
+
+        // සේවාවක් තෝරද්දී සෙවුම පිරිසිදු කරයි
         function selectService(service) {
             selectedService = service;
             document.getElementById('selected-service').value = service;
+            document.getElementById('service-search').value = '';
             renderButtons();
         }
 
@@ -178,7 +199,7 @@
             const descInput = document.getElementById('income-desc');
 
             if (!selectedService) {
-                alert('කරුණාකර පළමුව ඉහත ලැයිස්තුවෙන් සේවාවක් (බටන් එකක්) තෝරන්න!');
+                alert('කරුණාකර පළමුව ලැයිස්තුවෙන් සේවාවක් (බටන් එකක්) තෝරන්න!');
                 return;
             }
 
@@ -207,7 +228,7 @@
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
             } catch (e) {
-                alert('දත්ත සුරැකීමට නොහැකි විය. Browser එකේ storage අවහිර වී ඇත්දැයි පරීක්ෂා කරන්න.');
+                alert('දත්ත සුරැකීමට නොහැකි විය.');
             }
             updateUI();
         }
@@ -274,7 +295,6 @@
             }
         }
 
-        // සියලු දිනවල දත්ත CSV ලෙස බාගැනීම (Excel වල සිංහල අකුරු නිවැරදිව පෙනීමට BOM එකතු කර ඇත)
         function exportCSV() {
             if (transactions.length === 0) {
                 alert('බාගැනීමට දත්ත නැත.');
